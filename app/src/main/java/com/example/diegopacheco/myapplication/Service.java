@@ -2,15 +2,13 @@ package com.example.diegopacheco.myapplication;
 
 
 import android.app.Notification;
-import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Toast;
-
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -20,9 +18,17 @@ import static android.content.ContentValues.TAG;
 public class Service extends android.app.Service{
 
 
-    public Integer contador = 86385;
+    public Integer contador = 1;
     TimerTask timerTask;
     Timer timer ;
+
+    private final IBinder mBinder = new LocalBinder();
+
+    public class LocalBinder extends Binder {
+        Service getService(){
+            return Service.this;
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -54,21 +60,26 @@ public class Service extends android.app.Service{
                    // Log.d("contador", contador + "");
                     Intent intent = new Intent("FILTRO-CONTADOR");
                     intent.putExtra("cont", contador);
+
                     LocalBroadcastManager.getInstance(getBaseContext()).sendBroadcast(intent);
 
                 }
             };
             timer.schedule(timerTask, 0, 1000);
         }
-        //Crea de nuevo el servicio despues de haber sido destruido por el sistema.
+
+        //Crea de nuevo el servicio despues de haber sido destruido por el sistema. = START_STICKY
         return START_NOT_STICKY;
     }
-    private void pararcontador(){
-        if(contador != null){
-            timerTask.cancel();
-        }
+    public void pararcontador(){
+
+        timerTask.cancel();
     }
 
+    public void reanudarcontador(){
+        timerTask.run();
+
+    }
     @Override
     public void onDestroy() {
        pararcontador();
@@ -79,7 +90,8 @@ public class Service extends android.app.Service{
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+
+        return mBinder;
     }
 
 }

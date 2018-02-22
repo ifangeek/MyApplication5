@@ -18,7 +18,7 @@ import static android.content.ContentValues.TAG;
 public class Service extends android.app.Service{
 
 
-    public Integer contador = 1;
+    public Integer contador = 86390;
     TimerTask timerTask;
     Timer timer ;
 
@@ -34,6 +34,7 @@ public class Service extends android.app.Service{
     public void onCreate() {
         super.onCreate();
         timer = new Timer();
+
 
     }
 
@@ -51,35 +52,52 @@ public class Service extends android.app.Service{
         startForeground(101,notification);
 
 
-        if(timerTask == null) {
-            timerTask = new TimerTask() {
-                @Override
-                public void run() {
-
-                    contador += 1;
-                   // Log.d("contador", contador + "");
-                    Intent intent = new Intent("FILTRO-CONTADOR");
-                    intent.putExtra("cont", contador);
-
-                    LocalBroadcastManager.getInstance(getBaseContext()).sendBroadcast(intent);
-
-                }
-            };
-            timer.schedule(timerTask, 0, 1000);
-        }
+       servicioInicial();
 
         //Crea de nuevo el servicio despues de haber sido destruido por el sistema. = START_STICKY
         return START_NOT_STICKY;
     }
     public void pararcontador(){
 
-        timerTask.cancel();
+            timerTask.cancel();
     }
 
     public void reanudarcontador(){
-        timerTask.run();
+                servicioInicial();
+    }
+
+    public void servicioInicial() {
+        if (timerTask == null) {
+            timerTask = new TimerTask() {
+                @Override
+                public void run() {
+
+                    contador += 1;
+                    Intent intent = new Intent("FILTRO-CONTADOR");
+                    intent.putExtra("cont", contador);
+                    LocalBroadcastManager.getInstance(getBaseContext()).sendBroadcast(intent);
+
+                }
+            };
+            timer.schedule(timerTask, 0, 1000);
+        }
+        else if(timerTask !=  null){
+            Log.d("entro","entro");
+            timerTask = new TimerTask() {
+
+                @Override
+                public void run() {
+                    contador += 1;
+                    Intent intent = new Intent("FILTRO-CONTADOR");
+                    intent.putExtra("cont", contador);
+                    LocalBroadcastManager.getInstance(getBaseContext()).sendBroadcast(intent);
+                }
+            };
+            timer.schedule(timerTask, 0, 1000);
+        }
 
     }
+
     @Override
     public void onDestroy() {
        pararcontador();
@@ -90,8 +108,16 @@ public class Service extends android.app.Service{
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-
         return mBinder;
     }
+
+    public void detener(){
+        contador = 0;
+        timerTask.cancel();
+        timer.purge();
+
+    }
+
+
 
 }

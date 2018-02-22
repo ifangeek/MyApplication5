@@ -29,14 +29,14 @@ import static android.os.Parcelable.CONTENTS_FILE_DESCRIPTOR;
 public class MainActivity extends AppCompatActivity {
 
     TextView contador;
-    Button iniciar,pausar,detener;
-    Service  mService;
+    Button iniciar, pausar, detener;
+    Service mService;
     boolean mBound = false;
-
+    String result;
 
 
     BroadcastReceiver br = new MyBroadcast();
-    public long segundo,minuto,hora,dia;
+    public long segundo, minuto, hora, dia;
 
 
     @Override
@@ -44,37 +44,39 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        contador = (TextView)findViewById(R.id.TV_contador);
-        iniciar = (Button)findViewById(R.id.btnIniciar);
-        pausar = (Button)findViewById(R.id.btnPausar);
-        detener = (Button)findViewById(R.id.btnDetener);
+        contador = (TextView) findViewById(R.id.TV_contador);
+        iniciar = (Button) findViewById(R.id.btnIniciar);
+        pausar = (Button) findViewById(R.id.btnPausar);
+        detener = (Button) findViewById(R.id.btnDetener);
 
         iniciarServicio();
         Pausar();
         Reanudar();
+        Detener();
 
     }
-        public class MyBroadcast extends BroadcastReceiver{
+
+    public class MyBroadcast extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            int numero = Integer.parseInt(intent.getExtras().getInt("cont")+"");
+            int numero = Integer.parseInt(intent.getExtras().getInt("cont") + "");
 
             dia = TimeUnit.SECONDS.toDays(numero);
             hora = TimeUnit.SECONDS.toHours(numero) - dia * 24;
-            minuto = TimeUnit.SECONDS.toMinutes(numero) - TimeUnit.SECONDS.toHours(numero)* 60;
+            minuto = TimeUnit.SECONDS.toMinutes(numero) - TimeUnit.SECONDS.toHours(numero) * 60;
             segundo = TimeUnit.SECONDS.toSeconds(numero) - TimeUnit.SECONDS.toMinutes(numero) * 60;
 
-            String result = String.format("%1$02d:%2$02d:%3$02d:%4$02d",dia,hora,minuto,segundo);
+            result = String.format("%1$02d:%2$02d:%3$02d:%4$02d", dia, hora, minuto, segundo);
             contador.setText(result.toString());
 
-            Log.d("Dia",result);
+            Log.d("RESULTADO: ", result);
         }
     }
 
-    private void iniciarServicio(){
-        Intent intent = new Intent(this,Service.class);
+    private void iniciarServicio() {
+        Intent intent = new Intent(this, Service.class);
         startService(intent);
     }
 
@@ -83,44 +85,52 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         IntentFilter filter = new IntentFilter("FILTRO-CONTADOR");
-        LocalBroadcastManager.getInstance(this).registerReceiver(br,filter);
+        LocalBroadcastManager.getInstance(this).registerReceiver(br, filter);
 
-        Intent intent = new Intent(this,Service.class);
-        bindService(intent,mConnection,Context.BIND_AUTO_CREATE);
+        Intent intent = new Intent(this, Service.class);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(br);
-        if(mBound){
+        if (mBound) {
             unbindService(mConnection);
             mBound = false;
         }
 
     }
 
-    public void Pausar(){
+
+    public void Pausar() {
         pausar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mService.pararcontador();
+                iniciar.setText("Reanudar Servicio");
+                iniciar.setEnabled(true);
 
             }
         });
 
     }
 
-    public void Reanudar(){
-        iniciar.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mService.reanudarcontador();
-            }
-        });
-    }
+    public void Reanudar() {
+
+            iniciar.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    contador.setText(result);
+                    mService.reanudarcontador();
+                    iniciar.setEnabled(false);
+                }
+            });
+        }
 
 
+
+    //Uso de clases del Servicio.
     private ServiceConnection mConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -136,4 +146,21 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    public void Detener(){
+        detener.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mService.detener();
+                contador.setText("00:00:00:00");
+                iniciar.setText("Iniciar Servicio");
+                iniciar.setEnabled(true);
+            }
+        });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mService.pararcontador();
+    }
 }
